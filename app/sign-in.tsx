@@ -10,16 +10,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import signLogo from "../assets/images/onboarding.png";
 import google from "../assets/icons/google.png";
 import { login } from "@/lib/appwrite";
+import { useGlobalContext } from "@/lib/global-provider";
+import { Redirect } from "expo-router";
 
 const Auth = () => {
+  const { refetch, loading, isLogged } = useGlobalContext();
+
   const handleLogin = async () => {
     const result = await login();
     if (result) {
-      console.log("Login Succes");
+      refetch();
     } else {
       Alert.alert("Error", "Failed to login");
     }
   };
+
+  if (!loading && isLogged) return <Redirect href="/" />;
 
   return (
     <SafeAreaView className="bg-white h-full">

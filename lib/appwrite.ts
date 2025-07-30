@@ -1,3 +1,6 @@
+import { Buffer } from "buffer";
+import * as Linking from "expo-linking";
+import { openAuthSessionAsync } from "expo-web-browser";
 import {
   Account,
   Avatars,
@@ -6,8 +9,6 @@ import {
   OAuthProvider,
   Storage,
 } from "react-native-appwrite";
-import * as Linking from "expo-linking";
-import { openAuthSessionAsync } from "expo-web-browser";
 
 export const config = {
   platform: "com.jsm.restate",
@@ -22,7 +23,7 @@ client
   .setEndpoint(config.endpoint!)
   .setProject(config.projectId!);
 
-export const avater = new Avatars(client);
+export const avatar = new Avatars(client);
 export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
@@ -32,7 +33,7 @@ export const login = async () => {
     // هنا انشاءت متغير بيحمل مسار الصفحه الي المستخدم هيروحها لو عمل تسجيل دخول ناجح
     const redirectUrl = Linking.createURL("/");
 
-    // هنا بنشاء جلسه عشان اربط تطبيقي بطريقه تسجيل الدخول من جوجل وفي وبضيف فيها المسار الي المستخدم مفروض هيروحوا 
+    // هنا بنشاء جلسه عشان اربط تطبيقي بطريقه تسجيل الدخول من جوجل وفي وبضيف فيها المسار الي المستخدم مفروض هيروحوا
     // بعد نجاح الجلسه
     const response = await account.createOAuth2Token(
       OAuthProvider.Google,
@@ -48,7 +49,7 @@ export const login = async () => {
     if (browserResult.type !== "success")
       throw new Error("Open OAuth2 Session Async failed");
 
-    // url بعدها بحول الينك بتاع تسجيل الدخول الي  
+    // url بعدها بحول الينك بتاع تسجيل الدخول الي
     // عشان اقدر اخد منه بيانات المستخدم والباسورد
     const url = new URL(browserResult.url);
     const secret = url.searchParams.get("secret")?.toString();
@@ -77,15 +78,26 @@ export const logout = async () => {
 
 export const getCurrentUser = async () => {
   try {
-    const user = await account.get();
-    if (user.$id) {
-      const userAvatar = await avater.getInitials(user.name);
+    const result = await account.get();
+    if (result.$id) {
+      // تحقق إذا كان لدى المستخدم صورة شخصية
+      const userAvatarUrl = result.prefs?.avatar; // عدل اسم الحقل حسب تخزينك
+
+      let avatarUri = userAvatarUrl;
+      if (!avatarUri) {
+        // إذا لم توجد صورة، استخدم الأحرف الأولى
+        const userAvatarBuffer = await avatar.getInitials(result.name);
+        const buffer = Buffer.from(userAvatarBuffer);
+        const base64 = buffer.toString("base64");
+        avatarUri = `data:image/png;base64,${base64}`;
+      }
 
       return {
-        ...user,
-        avatar: userAvatar.toString(),
+        ...result,
+        avatar: avatarUri,
       };
     }
+
     return null;
   } catch (error) {
     console.error(error);
