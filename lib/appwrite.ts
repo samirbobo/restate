@@ -7,8 +7,15 @@ import {
   Client,
   Databases,
   OAuthProvider,
+  Query,
   Storage,
 } from "react-native-appwrite";
+
+interface propertiesProps {
+  filter: string;
+  query: string;
+  limit?: number;
+}
 
 export const config = {
   platform: "com.jsm.restate",
@@ -109,5 +116,59 @@ export const getCurrentUser = async () => {
   } catch (error) {
     console.error(error);
     return null;
+  }
+};
+
+export const getLatestProperties = async () => {
+  try {
+    const response = await databases.listDocuments(
+      config.databaseId!,
+      config.propertiesCollectionId!,
+      [Query.orderAsc("$createdAt"), Query.limit(5)]
+    );
+
+    return response.documents;
+  } catch (error) {
+    console.error("Error fetching latest properties:", error);
+    return [];
+  }
+};
+
+export const getPropertites = async ({
+  filter,
+  query,
+  limit,
+}: propertiesProps) => {
+  try {
+    const buildQuery = [Query.orderDesc("$createdAt")];
+
+    if (filter && filter !== "All") {
+      buildQuery.push(Query.equal("type", filter));
+    }
+
+    if (query) {
+      buildQuery.push(
+        Query.or([
+          Query.search("name", query),
+          Query.search("address", query),
+          Query.search("type", query),
+        ])
+      );
+    }
+
+    if (limit) {
+      buildQuery.push(Query.limit(limit));
+    }
+
+    const response = await databases.listDocuments(
+      config.databaseId!,
+      config.propertiesCollectionId!,
+      buildQuery
+    );
+
+    return response.documents;
+  } catch (error) {
+    console.error("Error fetching properties:", error);
+    return [];
   }
 };

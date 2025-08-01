@@ -1,14 +1,17 @@
 import { Card, FeaturedCard } from "@/components/Cards";
 import Filters from "@/components/Filters";
+import NoResult from "@/components/NoResult";
 import Search from "@/components/Search";
 import icons from "@/constants/icons";
+import { getLatestProperties, getPropertites } from "@/lib/appwrite";
 import { useGlobalContext } from "@/lib/global-provider";
-import seed from "@/lib/seed";
+import { useAppwrite } from "@/lib/useAppwrite";
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect } from "react";
 import {
-  Button,
+  ActivityIndicator,
   FlatList,
   Image,
-  ScrollView,
   Text,
   TouchableOpacity,
   View,
@@ -18,19 +21,59 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function Index() {
   const { user } = useGlobalContext();
 
+  const params = useLocalSearchParams<{ query?: string; filter?: string }>();
+
+  const { data: latestProperties, loading: latestPropertiesLoading } =
+    useAppwrite({
+      fn: getLatestProperties,
+    });
+
+  const {
+    data: properties,
+    loading: propertiesLoading,
+    refetch,
+  } = useAppwrite({
+    fn: getPropertites,
+    params: {
+      filter: params.filter!,
+      query: params.query!,
+      limit: 6,
+    },
+    skip: true,
+  });
+
+  useEffect(() => {
+    // Refetch properties when filter or query changes
+    refetch({
+      filter: params.filter!,
+      query: params.query!,
+      limit: 6,
+    });
+  }, [params.filter, params.query]);
+
+  const handleCardPress = (id: string) => router.push(`/properties/${id}`);
+
   return (
     <SafeAreaView className="h-full bg-white">
       <FlatList
-        data={[1, 2, 3, 4]} // Example data, replace with actual data source
-        renderItem={({ item }) => <Card />}
-        keyExtractor={(item) => item.toString()}
+        data={properties}
+        renderItem={({ item }) => (
+          <Card item={item} onPress={() => handleCardPress(item.$id)} />
+        )}
+        keyExtractor={(item) => item.$id}
         numColumns={2}
         showsVerticalScrollIndicator={false}
         contentContainerClassName="pb-32 px-5"
         columnWrapperClassName="flex gap-4"
+        ListEmptyComponent={
+          propertiesLoading ? (
+            <ActivityIndicator size="large" className="text-primary-300 mt-5" />
+          ) : (
+            <NoResult />
+          )
+        }
         ListHeaderComponent={() => (
           <>
-          <Button onPress={seed} title="Seed" />
             {/* Header of Page */}
             <View className="flex flex-row justify-between items-center mt-5">
               <View className="flex flex-row items-center gap-[10px]">
@@ -70,15 +113,26 @@ export default function Index() {
             </View>
 
             {/* Featured Cards */}
-            <FlatList
-              data={[1, 2, 3, 4]} // Example data, replace with actual data source
-              renderItem={({ item }) => <FeaturedCard />}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              bounces={false}
-              keyExtractor={(item) => item.toString()}
-              contentContainerClassName="flex gap-5"
-            />
+            {latestPropertiesLoading ? (
+              <ActivityIndicator size="large" className="text-primary-300" />
+            ) : !latestProperties || latestProperties?.length === 0 ? (
+              <NoResult />
+            ) : (
+              <FlatList
+                data={latestProperties}
+                renderItem={({ item }) => (
+                  <FeaturedCard
+                    item={item}
+                    onPress={() => handleCardPress(item.$id)}
+                  />
+                )}
+                keyExtractor={(item) => item.$id}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                bounces={false}
+                contentContainerClassName="flex gap-5"
+              />
+            )}
 
             {/* Header of Cards */}
             <View className="flex flex-row items-center justify-between mt-5">
