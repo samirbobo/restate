@@ -172,3 +172,21 @@ export const getPropertites = async ({
     return [];
   }
 };
+
+export const getPropertyById = async ({
+  propertyId,
+}: {
+  propertyId: string;
+}) => {
+  try {
+    const response = await databases.getDocument(
+      config.databaseId!,
+      config.propertiesCollectionId!,
+      propertyId
+    );
+    return response;
+  } catch (error) {
+    console.error("Error fetching property by ID:", error);
+    return null;
+  }
+};
