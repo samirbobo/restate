@@ -105,7 +105,7 @@ export default function Index() {
                 Featured
               </Text>
 
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push("/explore")}>
                 <Text className="text-base font-rubik-bold text-primary-300">
                   See All
                 </Text>
@@ -140,7 +140,7 @@ export default function Index() {
                 Our Recommendations
               </Text>
 
-              <TouchableOpacity>
+              <TouchableOpacity onPress={() => router.push("/explore")}>
                 <Text className="text-base font-rubik-bold text-primary-300">
                   See All
                 </Text>
