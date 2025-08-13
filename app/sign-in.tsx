@@ -29,7 +29,7 @@ const Auth = () => {
 
   return (
     <SafeAreaView className="bg-white h-full">
-      <ScrollView contentContainerClassName="h-full">
+      <ScrollView contentContainerClassName="pb-32 h-full">
         <Image
           source={signLogo}
           className="w-full h-2/3"
